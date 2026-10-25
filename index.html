@@ -1,0 +1,404 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0D1B2A">
+  <meta name="description" content="EcoPulse AI helps campuses report sustainability issues, estimate resource savings, and track environmental impact.">
+  <title>EcoPulse AI | Campus Sustainability</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/app.js" defer></script>
+</head>
+
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#" data-page="overview">
+      <span class="brand-mark">E</span>
+      <span><strong>EcoPulse <em>AI</em></strong><small>Campus Sustainability</small></span>
+    </a>
+
+    <p class="nav-label">WORKSPACE</p>
+    <nav class="navigation" aria-label="Main navigation">
+      <button class="nav-link active" data-page="overview"><span>◫</span> Overview</button>
+      <button class="nav-link" data-page="issues"><span>☷</span> Issue Management</button>
+      <button class="nav-link" data-page="report"><span>＋</span> Report an Issue</button>
+      <button class="nav-link" data-page="simulator"><span>↗</span> Impact Simulator</button>
+      <button class="nav-link" data-page="locations"><span>▦</span> QR Locations</button>
+      <button class="nav-link" data-page="analytics"><span>▥</span> Analytics</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <span class="status-dot"></span>
+      <span>Sustainability workspace</span>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <button class="mobile-menu" id="mobileMenu" aria-label="Toggle navigation"
+              aria-expanded="false" type="button">☰</button>
+      <div>
+        <p class="eyebrow">CAMPUS OPERATIONS</p>
+        <h1 id="pageTitle">Overview</h1>
+      </div>
+      <div class="connection" id="connectionStatus">
+        <span class="status-dot"></span> Connecting...
+      </div>
+    </header>
+
+    <div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
+
+    <!-- OVERVIEW -->
+    <section class="page active" id="page-overview">
+      <div class="hero">
+        <div>
+          <p class="eyebrow mint">SUSTAINABILITY COMMAND CENTER</p>
+          <h2>Make every resource count.</h2>
+          <p>Identify campus waste, prioritize action, and track meaningful sustainability outcomes with EcoPulse AI.</p>
+          <button class="btn btn-primary" data-page="report" type="button">＋ Report an issue</button>
+        </div>
+        <div class="hero-symbol" aria-hidden="true">♧</div>
+      </div>
+
+      <div class="section-heading">
+        <div><p class="eyebrow">CAMPUS AT A GLANCE</p><h2>Performance overview</h2></div>
+        <span class="muted small">Live database statistics</span>
+      </div>
+
+      <div class="metric-grid">
+        <article class="metric-card"><span>Total reports</span><strong id="metricTotal">—</strong><small>Recorded issues</small></article>
+        <article class="metric-card"><span>Open issues</span><strong id="metricOpen">—</strong><small>Awaiting resolution</small></article>
+        <article class="metric-card"><span>High priority</span><strong id="metricHigh">—</strong><small>Require attention</small></article>
+        <article class="metric-card"><span>Resolved issues</span><strong id="metricResolved">—</strong><small>Marked resolved</small></article>
+      </div>
+
+      <div class="content-grid overview-grid">
+        <article class="panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">MAINTENANCE</p><h2>Recent issues</h2></div>
+            <button class="text-button" data-page="issues" type="button">View all →</button>
+          </div>
+          <div id="recentIssues" class="recent-list"><div class="empty-state">Loading reports...</div></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">SYSTEM HEALTH</p><h2>Platform status</h2></div></div>
+          <div class="health-row"><span>Web application</span><span class="pill success">Available</span></div>
+          <div class="health-row"><span>Backend API</span><span id="apiStatus" class="pill neutral">Checking</span></div>
+          <div class="health-row"><span>Database</span><span id="dbStatus" class="pill neutral">Checking</span></div>
+          <div class="health-row"><span>Priority engine</span><span class="pill success">Available</span></div>
+          <p class="small muted health-note">Environmental savings are estimates, not verified meter readings.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ISSUE MANAGEMENT -->
+    <section class="page" id="page-issues">
+      <div class="page-intro">
+        <div><p class="eyebrow">CAMPUS MAINTENANCE</p><h2>Issue management</h2>
+          <p>Review reports, inspect priority scores, and track repairs.</p></div>
+        <button class="btn btn-primary" data-page="report" type="button">＋ New report</button>
+      </div>
+
+      <article class="panel">
+        <div class="filter-bar">
+          <input id="issueSearch" type="search" placeholder="Search issues or locations..." aria-label="Search issues or locations">
+          <select id="filterStatus" aria-label="Filter by status">
+            <option value="">All statuses</option><option>Reported</option><option>Acknowledged</option>
+            <option>In Progress</option><option>Resolved</option><option>Reopened</option>
+          </select>
+          <select id="filterPriority" aria-label="Filter by priority">
+            <option value="">All priorities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+          </select>
+          <button class="btn btn-secondary" id="refreshIssues" type="button">Refresh</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Issue</th><th>Location</th><th>Priority</th><th>Status</th><th>Reported</th><th>Action</th></tr></thead>
+            <tbody id="issuesTable"><tr><td colspan="6" class="empty-state">Loading issues...</td></tr></tbody>
+          </table>
+        </div>
+        <p class="small muted" id="issueCount"></p>
+      </article>
+    </section>
+
+    <!-- REPORT AN ISSUE -->
+    <section class="page" id="page-report">
+      <div class="page-intro">
+        <div><p class="eyebrow">REPORT A PROBLEM</p><h2>New sustainability report</h2>
+          <p>Describe the issue accurately so the priority engine can assess it.</p></div>
+      </div>
+
+      <div class="content-grid form-grid">
+        <article class="panel">
+          <form id="reportForm" enctype="multipart/form-data">
+            <div class="form-grid-inner">
+
+              <label class="field full">Issue title
+                <input name="title" required minlength="3" maxlength="120" placeholder="e.g. Water leaking near washroom">
+              </label>
+
+              <label class="field">Issue category
+                <select name="category" id="reportCategory" required>
+                  <option>Water Leakage</option>
+                  <option>Overflowing Tank</option>
+                  <option>Electricity Wastage</option>
+                  <option>Lighting or Fan Left On</option>
+                  <option>Waste Management</option>
+                  <option>Single-Use Plastic</option>
+                  <option>Other Sustainability Issue</option>
+                </select>
+              </label>
+
+              <label class="field">Building
+                <input name="building" id="reportBuilding" required maxlength="120" placeholder="e.g. Main Block">
+              </label>
+
+              <label class="field full">Specific location
+                <input name="location_details" id="reportLocation" required maxlength="200" placeholder="e.g. First floor, washroom">
+              </label>
+
+              <label class="field full">Description
+                <textarea name="description" required minlength="5" maxlength="2000" rows="4" placeholder="Explain what you observed..."></textarea>
+              </label>
+
+              <label class="field">Severity
+                <span class="field-help">1 = low, 5 = severe</span>
+                <select name="severity">
+                  <option value="1">1 — Very low</option>
+                  <option value="2">2 — Low</option>
+                  <option value="3" selected>3 — Moderate</option>
+                  <option value="4">4 — High</option>
+                  <option value="5">5 — Very high</option>
+                </select>
+              </label>
+
+              <label class="field">Safety risk
+                <select name="safety_risk">
+                  <option value="1">1 — Minimal</option>
+                  <option value="2">2 — Low</option>
+                  <option value="3" selected>3 — Moderate</option>
+                  <option value="4">4 — High</option>
+                  <option value="5">5 — Very high</option>
+                </select>
+              </label>
+
+              <label class="field">Estimated resource loss
+                <input name="estimated_resource_loss" type="number" min="0" max="1000000" step="any" value="0">
+                <span class="field-help">Use the same scale consistently; enter 0 if unknown.</span>
+              </label>
+
+              <label class="field">Unresolved hours
+                <input name="unresolved_hours" type="number" min="0" max="1000000" step="any" value="0">
+              </label>
+
+              <label class="checkbox-field full">
+                <input name="near_electrical" type="checkbox">
+                Water or overflow is near electrical equipment
+              </label>
+
+              <label class="field">Reporter name
+                <input name="reporter_name" maxlength="120" placeholder="Optional">
+              </label>
+
+              <label class="field">Contact information
+                <input name="reporter_contact" maxlength="120" placeholder="Optional">
+              </label>
+
+              <!-- OPTIONAL ISSUE PHOTO -->
+              <div class="field full">
+                <label for="issuePhoto">Upload issue photo (optional)</label>
+                <input
+                  type="file"
+                  id="issuePhoto"
+                  name="photo"
+                  accept="image/jpeg,image/png,image/webp"
+                  aria-describedby="photoHelp photoError"
+                >
+                <span class="field-help" id="photoHelp">JPEG, PNG, or WebP. Maximum file size: 5 MB.</span>
+
+                <div id="photoPreviewContainer" hidden>
+                  <img
+                    id="photoPreview"
+                    alt="Preview of selected issue photo"
+                    style="display:none; max-width:220px; max-height:220px; margin-top:12px; border-radius:10px; object-fit:contain;"
+                  >
+                  <button type="button" id="removePhoto" class="btn btn-secondary" style="margin-top:8px;">
+                    Remove photo
+                  </button>
+                </div>
+
+                <p id="photoError" class="small" role="alert" aria-live="polite" style="display:none;color:#dc2626;"></p>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Submit report</button>
+              <button class="btn btn-secondary" type="reset">Clear form</button>
+            </div>
+          </form>
+        </article>
+
+        <aside class="panel info-panel">
+          <div class="info-icon">✳</div>
+          <p class="eyebrow">PRIORITY ASSESSMENT</p>
+          <h2>Every report gets assessed.</h2>
+          <p>The priority engine considers severity, safety risk, estimated resource loss, and time unresolved.</p>
+          <div class="health-row"><span>Critical / High</span><span class="pill danger">Urgent attention</span></div>
+          <div class="health-row"><span>Medium</span><span class="pill warning">Plan action</span></div>
+          <div class="health-row"><span>Low</span><span class="pill success">Monitor</span></div>
+          <p class="small muted">For immediate danger, contact authorized campus staff or emergency services. This app is not an emergency response system.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- IMPACT SIMULATOR -->
+    <section class="page" id="page-simulator">
+      <div class="page-intro">
+        <div><p class="eyebrow">WHAT-IF ANALYSIS</p><h2>Impact simulator</h2>
+          <p>Explore how preventing leaks, reducing unnecessary energy use, and avoiding disposable plastic can benefit your campus.</p></div>
+      </div>
+
+      <div class="content-grid simulator-grid">
+        <article class="panel simulator-card">
+          <div class="panel-heading"><div><p class="eyebrow">WATER CONSERVATION</p><h2>Leak prevention</h2></div><span class="sim-icon">≈</span></div>
+          <p class="muted small">Estimate how much water could be saved by stopping a leak.</p>
+          <form id="waterForm" class="sim-form">
+            <label class="field">Leakage rate (litres/hour)<input name="leakage_litres_per_hour" type="number" min="0" max="100000" step="any" value="5" required></label>
+            <label class="field">Hours of leakage avoided<input name="hours_avoided" type="number" min="0" max="8760" step="any" value="24" required></label>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Calculate water savings</button>
+              <button class="btn btn-secondary" id="resetWater" type="button">Reset</button>
+            </div>
+          </form>
+          <div class="result-card" aria-live="polite">
+            <span>Estimated water saved</span><strong id="waterResult">— <small>L</small></strong>
+            <p id="waterFormula" class="small muted">Enter your values and calculate to see the estimate.</p>
+          </div>
+          <p class="small muted">Calculation: leakage rate × hours avoided. Actual savings depend on the real leak rate and repair.</p>
+        </article>
+
+        <article class="panel simulator-card">
+          <div class="panel-heading"><div><p class="eyebrow">ENERGY EFFICIENCY</p><h2>Electricity savings</h2></div><span class="sim-icon">ϟ</span></div>
+          <p class="muted small">Estimate energy, cost, and emissions avoided by switching off unnecessary equipment.</p>
+          <form id="electricityForm" class="sim-form">
+            <label class="field">Power per device (kW)<input name="power_kw_per_device" type="number" min="0" max="100000" step="any" value="0.5" required></label>
+            <label class="field">Number of devices<input name="device_count" type="number" min="0" max="100000" step="1" value="4" required></label>
+            <label class="field">Hours avoided<input name="hours_avoided" type="number" min="0" max="8760" step="any" value="5" required></label>
+            <label class="field">Electricity tariff (₹/kWh)<input name="tariff_per_kwh" type="number" min="0" max="100000" step="any" value="8" required></label>
+            <label class="field">Emission factor (kg CO₂e/kWh)<input name="emission_factor" type="number" min="0" max="100" step="any" value="0.7" required>
+              <span class="field-help">Adjust this assumed factor if you have an authoritative local value.</span>
+            </label>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Calculate energy savings</button>
+              <button class="btn btn-secondary" id="resetElectricity" type="button">Reset</button>
+            </div>
+          </form>
+          <div class="result-grid" aria-live="polite">
+            <div class="result-card"><span>Energy saved</span><strong id="energyResult">— <small>kWh</small></strong><p class="small muted">Energy avoided</p></div>
+            <div class="result-card"><span>Cost avoided</span><strong id="costResult">— <small>₹</small></strong><p class="small muted">Estimated bill savings</p></div>
+            <div class="result-card"><span>Emissions avoided</span><strong id="emissionsResult">— <small>kg</small></strong><p class="small muted">Estimated CO₂e</p></div>
+          </div>
+          <p id="electricityFormula" class="small muted">Energy = power × devices × hours. Cost and emissions are calculated from energy saved.</p>
+        </article>
+
+        <article class="panel plastic-panel simulator-card">
+          <div class="panel-heading"><div><p class="eyebrow">WASTE REDUCTION</p><h2>Single-use plastic</h2></div><span class="sim-icon">♻</span></div>
+          <p class="muted small">Estimate disposable items avoided by using reusable alternatives.</p>
+          <form id="plasticForm" class="inline-form">
+            <label class="field">Number of items avoided<input name="items_avoided" type="number" min="0" max="10000000" step="1" value="100" required></label>
+            <button class="btn btn-primary" type="submit">Estimate impact</button>
+          </form>
+          <div class="result-card" aria-live="polite">
+            <span>Single-use items avoided</span><strong id="plasticResult">—</strong>
+            <p id="plasticFormula" class="small muted">Enter the number of items and calculate to see the estimate.</p>
+          </div>
+          <p class="small muted">This counts items avoided; it does not estimate plastic weight or carbon savings.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- QR LOCATIONS -->
+    <section class="page" id="page-locations">
+      <div class="page-intro">
+        <div><p class="eyebrow">LOCATION-BASED REPORTING</p><h2>QR locations</h2>
+          <p>Create a QR code for a campus location so users can open a prefilled report.</p></div>
+      </div>
+
+      <div class="content-grid locations-grid">
+        <article class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">LOCATION DIRECTORY</p><h2>Register a location</h2></div></div>
+          <form id="locationForm" class="form-grid-inner">
+            <label class="field">Building name<input name="building_name" required maxlength="120" placeholder="e.g. Main Block"></label>
+            <label class="field">Location name<input name="location_name" required maxlength="120" placeholder="e.g. First floor washroom"></label>
+            <label class="field full">Additional details<input name="location_details" maxlength="300" placeholder="Optional details"></label>
+            <div class="full"><button class="btn btn-primary" type="submit">＋ Add location</button></div>
+          </form>
+          <div class="divider"></div>
+          <div id="locationsList" class="location-list"><div class="empty-state">Loading locations...</div></div>
+        </article>
+
+        <article class="panel qr-panel">
+          <p class="eyebrow">LOCATION QR CODE</p><h2>Scan to report</h2>
+          <div id="qrPreview" class="qr-preview"><span>▦</span><p>Select a location to generate its QR code.</p></div>
+          <p class="small muted">Scan the code on a device that can reach this application. A localhost address works only on the computer running the server.</p>
+          <a id="qrDownload" class="btn btn-secondary disabled-link" href="#" download="ecopulse-location-qr.png">Download QR code</a>
+        </article>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="page" id="page-analytics">
+      <div class="page-intro">
+        <div><p class="eyebrow">DATA & INSIGHTS</p><h2>Sustainability analytics</h2>
+          <p>Understand issue patterns and repair outcomes from your recorded reports.</p></div>
+        <button class="btn btn-secondary" id="refreshAnalytics" type="button">Refresh analytics</button>
+      </div>
+
+      <div class="metric-grid analytics-metrics">
+        <article class="metric-card"><span>Confirmed repairs</span><strong id="analyticsRepairs">—</strong><small>Recorded confirmations</small></article>
+        <article class="metric-card"><span>Resolution rate</span><strong id="analyticsResolution">—</strong><small>Resolved / all reports</small></article>
+        <article class="metric-card"><span>Issue categories</span><strong id="analyticsCategories">—</strong><small>Categories with reports</small></article>
+        <article class="metric-card"><span>Critical issues</span><strong id="analyticsCritical">—</strong><small>Current database count</small></article>
+      </div>
+
+      <div class="content-grid charts-grid">
+        <article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">WORKLOAD</p><h2>Issues by status</h2></div></div><div class="chart-wrap"><canvas id="statusChart"></canvas></div></article>
+        <article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">RISK PROFILE</p><h2>Issues by priority</h2></div></div><div class="chart-wrap"><canvas id="priorityChart"></canvas></div></article>
+        <article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">SUSTAINABILITY HOTSPOTS</p><h2>Issues by category</h2></div></div><div class="chart-wrap"><canvas id="categoryChart"></canvas></div></article>
+        <article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">REPORTING ACTIVITY</p><h2>Daily reports · last 7 days</h2></div></div><div class="chart-wrap"><canvas id="dailyChart"></canvas></div></article>
+      </div>
+
+      <p class="small muted analytics-note">Charts show recorded issue counts. They do not imply measured water, energy, or carbon savings.</p>
+    </section>
+
+    <footer class="footer">
+      <span>EcoPulse AI</span><span>Campus sustainability operations</span>
+    </footer>
+  </main>
+</div>
+
+<!-- ISSUE DETAILS MODAL -->
+<div class="modal-backdrop hidden" id="issueModal">
+  <div class="modal panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="panel-heading">
+      <div><p class="eyebrow">ISSUE DETAILS</p><h2 id="modalTitle">Issue</h2></div>
+      <button class="icon-button" id="closeModal" aria-label="Close" type="button">✕</button>
+    </div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+</body>
+</html>
