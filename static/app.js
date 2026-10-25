@@ -1,5 +1,4 @@
 
-
 const API = "/api";
 
 const pageTitles = {
@@ -95,40 +94,16 @@ function showNotice(message, isError = false) {
   }, 6000);
 }
 
-
 async function api(path, options = {}) {
-  const isFormData = options.body instanceof FormData;
-
-  const headers = { ...(options.headers || {}) };
-
-  if (options.body && !isFormData) {
-    headers["Content-Type"] = "application/json";
-  }
-
   const response = await fetch(`${API}${path}`, {
     ...options,
-    headers
+    headers: {
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
+      ...(options.headers || {})
+    }
   });
-
-  const contentType = response.headers.get("content-type") || "";
-
-  const data = contentType.includes("application/json")
-    ? await response.json()
-    : null;
-
-  if (!response.ok) {
-    const detail = data?.detail;
-
-    throw new Error(
-      typeof detail === "string"
-        ? detail
-        : JSON.stringify(detail || `Request failed (${response.status})`)
-    );
-  }
-
-  return data;
-}
-
 
   const contentType = response.headers.get("content-type") || "";
 
@@ -740,146 +715,19 @@ async function refreshAfterIssueChange() {
 
 // REPORT AN ISSUE AND GEMINI RESULTS
 
-/* ISSUE PHOTO PREVIEW AND VALIDATION */
-
-const photoInput = $("#issuePhoto");
-const photoPreview = $("#photoPreview");
-const photoPreviewContainer = $("#photoPreviewContainer");
-const photoError = $("#photoError");
-const removePhotoButton = $("#removePhoto");
-
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
-
-const ALLOWED_PHOTO_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp"
-];
-
-let photoPreviewURL = null;
-
-function clearPhotoPreview() {
-  if (photoPreviewURL) {
-    URL.revokeObjectURL(photoPreviewURL);
-    photoPreviewURL = null;
-  }
-
-  if (photoInput) photoInput.value = "";
-
-  if (photoPreview) {
-    photoPreview.removeAttribute("src");
-    photoPreview.style.display = "none";
-  }
-
-  if (photoPreviewContainer) {
-    photoPreviewContainer.hidden = true;
-  }
-
-  if (photoError) {
-    photoError.textContent = "";
-    photoError.style.display = "none";
-  }
-}
-
-function showPhotoError(message) {
-  if (photoError) {
-    photoError.textContent = message;
-    photoError.style.display = "block";
-  }
-}
-
-photoInput?.addEventListener("change", () => {
-  clearPhotoErrorOnly();
-
-  const file = photoInput.files?.[0];
-
-  if (!file) {
-    clearPhotoPreview();
-    return;
-  }
-
-  if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-    clearPhotoPreview();
-    showPhotoError("Please select a JPEG, PNG, or WebP image.");
-    return;
-  }
-
-  if (file.size > MAX_PHOTO_SIZE) {
-    clearPhotoPreview();
-    showPhotoError("Photo must be 5 MB or smaller.");
-    return;
-  }
-
-  if (photoPreviewURL) {
-    URL.revokeObjectURL(photoPreviewURL);
-  }
-
-  photoPreviewURL = URL.createObjectURL(file);
-
-  if (photoPreview) {
-    photoPreview.src = photoPreviewURL;
-    photoPreview.style.display = "block";
-  }
-
-  if (photoPreviewContainer) {
-    photoPreviewContainer.hidden = false;
-  }
-});
-
-function clearPhotoErrorOnly() {
-  if (photoError) {
-    photoError.textContent = "";
-    photoError.style.display = "none";
-  }
-}
-
-removePhotoButton?.addEventListener("click", clearPhotoPreview);
-
-
-
 $("#reportForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const formElement = event.currentTarget;
   const form = new FormData(formElement);
-  const photo = form.get("photo");
-
-  // Validate the optional photo before uploading.
-  if (photo instanceof File && photo.size > 0) {
-    if (!ALLOWED_PHOTO_TYPES.includes(photo.type)) {
-      showPhotoError("Please select a JPEG, PNG, or WebP image.");
-      return;
-    }
-
-    if (photo.size > MAX_PHOTO_SIZE) {
-      showPhotoError("Photo must be 5 MB or smaller.");
-      return;
-    }
-  }
-
-  const payload = {};
-
-  for (const [key, value] of form.entries()) {
-    if (key !== "photo" && typeof value === "string") {
-      payload[key] = value;
-    }
-  }
+  const payload = Object.fromEntries(form.entries());
 
   payload.severity = Number(payload.severity);
   payload.safety_risk = Number(payload.safety_risk);
   payload.estimated_resource_loss =
     Number(payload.estimated_resource_loss || 0);
-  payload.unresolved_hours =
-    Number(payload.unresolved_hours || 0);
+  payload.unresolved_hours = Number(payload.unresolved_hours || 0);
   payload.near_electrical = form.has("near_electrical");
-
-  // The FastAPI endpoint expects the issue JSON as a multipart field.
-  const uploadData = new FormData();
-  uploadData.append("issue", JSON.stringify(payload));
-
-  if (photo instanceof File && photo.size > 0) {
-    uploadData.append("photo", photo);
-  }
 
   const button = event.submitter;
 
@@ -891,22 +739,18 @@ $("#reportForm")?.addEventListener("submit", async (event) => {
   try {
     const result = await api("/issues", {
       method: "POST",
-      body: uploadData
+      body: JSON.stringify(payload)
     });
-
-    const issue = result.issue || result;
 
     const aiStatus = result.ai?.analyzed
       ? `Gemini analyzed the report. Urgency: ${result.ai.urgency || "Unknown"}.`
       : "Report saved using rule-based fallback.";
 
     showNotice(
-      `Report #${issue.id} created. Priority: ${issue.priority_level}. ${aiStatus}`
+      `Report #${result.issue.id} created. Priority: ${result.issue.priority_level}. ${aiStatus}`
     );
 
     formElement.reset();
-    clearPhotoPreview();
-
     navigate("issues");
 
     await Promise.all([
@@ -914,7 +758,7 @@ $("#reportForm")?.addEventListener("submit", async (event) => {
       loadIssues()
     ]);
 
-    await openIssue(issue.id);
+    await openIssue(result.issue.id);
   } catch (error) {
     showNotice(error.message, true);
   } finally {
@@ -924,7 +768,6 @@ $("#reportForm")?.addEventListener("submit", async (event) => {
     }
   }
 });
-
 
 // QR LOCATION PREFILL
 function applyLocationPrefill() {
