@@ -3,3 +3,4 @@ fastapi
 uvicorn
 Pillow
 qrcode[pil]
+python-dotenv
