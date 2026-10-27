@@ -93,37 +93,6 @@ function showNotice(message, isError = false) {
     notice.classList.add("hidden");
   }, 6000);
 }
-
-// async function api(path, options = {}) {
-//   const response = await fetch(`${API}${path}`, {
-//     ...options,
-//     headers: {
-//       ...(options.body
-//         ? { "Content-Type": "application/json" }
-//         : {}),
-//       ...(options.headers || {})
-//     }
-//   });
-
-//   const contentType = response.headers.get("content-type") || "";
-
-//   const data = contentType.includes("application/json")
-//     ? await response.json()
-//     : null;
-
-//   if (!response.ok) {
-//     const detail = data?.detail;
-
-//     throw new Error(
-//       typeof detail === "string"
-//         ? detail
-//         : JSON.stringify(detail || `Request failed (${response.status})`)
-//     );
-//   }
-
-//   return data;
-// }
-
 async function api(path, options = {}) {
   const isFormData = options.body instanceof FormData;
 
