@@ -56,7 +56,10 @@ except ImportError:
 
 
 STATIC_DIR = BASE_DIR / "static"
-APP_BASE_URL = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
+APP_BASE_URL = os.getenv(
+    "APP_BASE_URL",
+    "https://ecopluse-ai-8w7s.onrender.com"
+).rstrip("/")
 DEFAULT_CATEGORY = "Other Sustainability Issue"
 
 app = FastAPI(
