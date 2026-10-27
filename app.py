@@ -8,7 +8,6 @@ from pathlib import Path
 from urllib.parse import urlencode
 from PIL import Image, UnidentifiedImageError
 from fastapi import BackgroundTasks
-from database import get_connection, init_db
 
 import qrcode
 from dotenv import load_dotenv
