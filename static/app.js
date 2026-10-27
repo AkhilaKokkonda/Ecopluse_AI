@@ -724,6 +724,7 @@ $("#reportForm")?.addEventListener("submit", async (event) => {
   const formElement = event.currentTarget;
   const form = new FormData(formElement);
   const payload = Object.fromEntries(form.entries());
+  delete payload.photo;
 
   payload.severity = Number(payload.severity);
   payload.safety_risk = Number(payload.safety_risk);
@@ -767,14 +768,18 @@ try {
   );
 
   formElement.reset();
-  navigate("issues");
 
-  await Promise.all([
-    loadOverview(),
-    loadIssues()
-  ]);
+// Redirect to Issue Management.
+navigate("issues");
 
-  await openIssue(result.issue.id);
+// Wait for the issue list to refresh.
+await loadIssues();
+
+// Refresh the dashboard.
+await loadOverview();
+
+// Open the newly submitted report.
+await openIssue(result.issue.id);
 } catch (error) {
   showNotice(error.message, true);
 } finally {
