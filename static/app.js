@@ -94,13 +94,47 @@ function showNotice(message, isError = false) {
   }, 6000);
 }
 
+// async function api(path, options = {}) {
+//   const response = await fetch(`${API}${path}`, {
+//     ...options,
+//     headers: {
+//       ...(options.body
+//         ? { "Content-Type": "application/json" }
+//         : {}),
+//       ...(options.headers || {})
+//     }
+//   });
+
+//   const contentType = response.headers.get("content-type") || "";
+
+//   const data = contentType.includes("application/json")
+//     ? await response.json()
+//     : null;
+
+//   if (!response.ok) {
+//     const detail = data?.detail;
+
+//     throw new Error(
+//       typeof detail === "string"
+//         ? detail
+//         : JSON.stringify(detail || `Request failed (${response.status})`)
+//     );
+//   }
+
+//   return data;
+// }
+
 async function api(path, options = {}) {
+  const isFormData = options.body instanceof FormData;
+
   const response = await fetch(`${API}${path}`, {
     ...options,
     headers: {
-      ...(options.body
-        ? { "Content-Type": "application/json" }
-        : {}),
+      ...(
+        options.body && !isFormData
+          ? { "Content-Type": "application/json" }
+          : {}
+      ),
       ...(options.headers || {})
     }
   });
@@ -736,37 +770,51 @@ $("#reportForm")?.addEventListener("submit", async (event) => {
     button.textContent = "Analyzing and submitting...";
   }
 
-  try {
-    const result = await api("/issues", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+  
+try {
+  const requestData = new FormData();
 
-    const aiStatus = result.ai?.analyzed
-      ? `Gemini analyzed the report. Urgency: ${result.ai.urgency || "Unknown"}.`
-      : "Report saved using rule-based fallback.";
+  // The deployed backend expects the issue as a JSON string
+  // inside a multipart/form-data field named "issue".
+  requestData.append("issue", JSON.stringify(payload));
 
-    showNotice(
-      `Report #${result.issue.id} created. Priority: ${result.issue.priority_level}. ${aiStatus}`
-    );
+  const photoInput = formElement.querySelector('input[type="file"]');
 
-    formElement.reset();
-    navigate("issues");
-
-    await Promise.all([
-      loadOverview(),
-      loadIssues()
-    ]);
-
-    await openIssue(result.issue.id);
-  } catch (error) {
-    showNotice(error.message, true);
-  } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = "Submit report";
-    }
+  if (photoInput?.files?.[0]) {
+    requestData.append("photo", photoInput.files[0]);
   }
+
+  const result = await api("/issues", {
+    method: "POST",
+    body: requestData
+  });
+
+  const aiStatus = result.ai?.analyzed
+    ? `Gemini analyzed the report. Urgency: ${result.ai.urgency || "Unknown"}.`
+    : "Report saved using rule-based fallback.";
+
+  showNotice(
+    `Report #${result.issue.id} created. Priority: ${result.issue.priority_level}. ${aiStatus}`
+  );
+
+  formElement.reset();
+  navigate("issues");
+
+  await Promise.all([
+    loadOverview(),
+    loadIssues()
+  ]);
+
+  await openIssue(result.issue.id);
+} catch (error) {
+  showNotice(error.message, true);
+} finally {
+  if (button) {
+    button.disabled = false;
+    button.textContent = "Submit report";
+  }
+}
+
 });
 
 // QR LOCATION PREFILL
