@@ -2,6 +2,7 @@ import json
 import os
 import logging
 import uuid
+import asyncio
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlencode
@@ -414,10 +415,14 @@ async def create_issue(
                 issue.title,
             )
 
-            candidate = analyze_issue(
-                description=issue.description,
-                building=issue.building,
-                location=issue.location_details,
+            candidate = await asyncio.wait_for(
+                asyncio.to_thread(
+                    analyze_issue,
+                    description=issue.description,
+                    building=issue.building,
+                    location=issue.location_details,
+                ),
+                timeout=12.0,
             )
 
             if not isinstance(candidate, dict):
