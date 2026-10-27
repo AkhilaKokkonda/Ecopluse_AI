@@ -1266,10 +1266,13 @@ async function loadLocations() {
   }
 }
 
+
 $("#locationForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const form = new FormData(event.currentTarget);
+  // Store the form before any asynchronous operation.
+  const formElement = event.currentTarget;
+  const form = new FormData(formElement);
 
   const payload = {
     building_name: String(form.get("building_name") || "").trim(),
@@ -1283,13 +1286,16 @@ $("#locationForm")?.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload)
     });
 
-    event.currentTarget.reset();
+    // Reset the saved form reference, not event.currentTarget.
+    formElement.reset();
+
     showNotice("Campus location registered.");
     await loadLocations();
   } catch (error) {
     showNotice(error.message, true);
   }
 });
+
 
 $("#locationsList")?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-qr-location]");
